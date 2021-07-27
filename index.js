@@ -2,9 +2,10 @@ import express from "express";
 import bodyParser from "body-parser";
 import fs from "fs";
 import {connectDB} from "./database.js";
-import {User} from "./model.js";
+import {User,Admin} from "./model.js";
 import dotenv from "dotenv";
-import {logger} from "./middleware.js";
+import {logger,generateAccessToken, verifyAcessToken} from "./middleware.js";
+import bcrypt from "bcrypt";
 const app = express();
 
 app.use(bodyParser.json());
@@ -18,7 +19,41 @@ dotenv.config();
 
 
 app.use(logger);
+app.use(verifyAcessToken);
 // routes
+
+
+app.post("/api/v1/admin/signup", async (req,res)=>{
+    const id = ++(await Admin.find()).length;
+    const {name,email,password} = req.body;
+    const admin = {
+        name,
+        email,
+        password: await bcrypt.hash(password,10)
+    };
+    console.log(admin);
+    const newAdmin =  await Admin.create(admin);
+    if(newAdmin.save()) {
+        const token = generateAccessToken(name);
+        res.status(200).header("Bearer-Token",token).send({message:"admin added!",id});
+    } else {
+        res.status(400).send({message:"Unable to register admin"});
+    }
+});
+
+app.post("/api/v1/admin/signin", async (req,res)=>{
+    const {email,password} = req.body;
+    const admin = await Admin.findOne({email});
+    const verified = await bcrypt.compare(password,admin.password);
+    if(verified) {
+        const token = generateAccessToken(admin.name);
+        res.status(200).header("Bearer-Token",token).send({message:"admin logged in successfully!"});
+    } else {
+        res.status(400).send({message:"Unable to login admin"});
+    }
+});
+
+
 
 app.get("/api/v1/users", async (req,res)=>{
     const users = await User.find();
@@ -66,7 +101,7 @@ app.put("/api/v1/users/:id",async (req,res) => {
         email,
         phno
     };
-    const response = await User.update({user_id: id},user);
+    const response = await User.updateOne({user_id: id},user);
     console.log(response)
     if(response.n) {
         res.status(200).send({message:"updated!",data: user});
