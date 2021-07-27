@@ -1,6 +1,5 @@
 import express from "express";
 import bodyParser from "body-parser";
-import fs from "fs";
 import {connectDB} from "./database.js";
 import {User,Admin} from "./model.js";
 import dotenv from "dotenv";
@@ -11,18 +10,18 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}))
 
-// connect to mongo cloud
+// connect to mongoDB cloud
 connectDB();
-//to access env file
+
+// access env file
 dotenv.config();
 
 
 
 app.use(logger);
 app.use(verifyAcessToken);
+
 // routes
-
-
 app.post("/api/v1/admin/signup", async (req,res)=>{
     const id = ++(await Admin.find()).length;
     const {name,email,password} = req.body;
@@ -31,7 +30,6 @@ app.post("/api/v1/admin/signup", async (req,res)=>{
         email,
         password: await bcrypt.hash(password,10)
     };
-    console.log(admin);
     const newAdmin =  await Admin.create(admin);
     if(newAdmin.save()) {
         const token = generateAccessToken(name);
@@ -86,9 +84,9 @@ app.post("/api/v1/users",async (req,res)=>{
 
     const newUser = await User.create(user);
     if(newUser.save()) {
-        res.status(200).send({message:"user added!",id});
+        res.status(200).send({message:"User added!",id});
     } else {
-        res.status(400).send({message:"Unable to save user"});
+        res.status(400).send({message:"Unable to add user"});
     }
 });
 
@@ -104,7 +102,7 @@ app.put("/api/v1/users/:id",async (req,res) => {
     const response = await User.updateOne({user_id: id},user);
     console.log(response)
     if(response.n) {
-        res.status(200).send({message:"updated!",data: user});
+        res.status(200).send({message:"User details updated!", data: user});
     } else {
         res.status(400).send({message:"Unable to update user"});
     }
@@ -113,7 +111,13 @@ app.put("/api/v1/users/:id",async (req,res) => {
 app.delete("/api/v1/users/:id",async (req,res)=>{
      const id = req.params.id;
      const response = await User.deleteOne({user_id: id});
-     res.status(200).send({message:`user with id ${id} is deleted successfully`});
+     console.log(response);
+     if(response.n) {
+         res.status(200).send({message:`user with id ${id} is deleted successfully`});
+     } else {
+         res.status(400).send({message: `User nor found with ID ${id}`});
+     }
+
 })
 
 const PORT = process.env.APP_PORT || 3000;
