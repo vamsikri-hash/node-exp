@@ -3,7 +3,13 @@ import bodyParser from "body-parser";
 import {connectDB} from "./database.js";
 import {User,Admin} from "./model.js";
 import dotenv from "dotenv";
-import {logger,generateAccessToken, verifyAcessToken} from "./middleware.js";
+import {
+    logger,
+    generateAccessToken,
+    verifyAcessToken,
+    validateAdminSignup,
+    validateUserInsertion
+} from "./middleware.js";
 import bcrypt from "bcrypt";
 const app = express();
 
@@ -22,7 +28,7 @@ app.use(logger);
 app.use(verifyAcessToken);
 
 // routes
-app.post("/api/v1/admin/signup", async (req,res)=>{
+app.post("/api/v1/admin/signup", validateAdminSignup ,async (req,res)=>{
     const id = ++(await Admin.find()).length;
     const {name,email,password} = req.body;
     const admin = {
@@ -71,7 +77,7 @@ app.get(`/api/v1/users/:id`, async (req,res)=>{
      }
 });
 
-app.post("/api/v1/users",async (req,res)=>{
+app.post("/api/v1/users", validateUserInsertion, async (req,res)=>{
     const id = ++(await User.find()).length;
     const { name,email,phno } = req.body;
     console.log(phno);

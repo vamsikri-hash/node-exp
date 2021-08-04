@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
+import Joi from "joi";
+
 dotenv.config();
 
 export const logger = (req, res, next) => {
@@ -32,3 +34,31 @@ export const verifyAcessToken = (req, res, next) => {
         res.status(400).send({message:"Invalid Token"});
     }
 };
+
+export const validateAdminSignup = (req, res, next) => {
+    const adminSchema = Joi.object({
+        name: Joi.string().min(3).max(20).required(),
+        email: Joi.string().email().required(),
+        password: Joi.string().min(5).required()
+    })
+    const {error} = adminSchema.validate({...req.body});
+    if(error) {
+        res.status(400).send({message: `validation failed : ${error.message}`});
+    }
+    next();
+}
+
+
+export const validateUserInsertion = (req, res, next) => {
+    const userSchema = Joi.object({
+        name: Joi.string().min(3).max(20).required(),
+        email: Joi.string().email().required(),
+        phno: Joi.string().min(10).max(10).required()
+    })
+    const {error} = userSchema.validate({...req.body});
+    if(error) {
+        res.status(400).send({message: `validation failed : ${error.message}`});
+    }
+    next();
+}
+
